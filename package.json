@@ -1,0 +1,17 @@
+{
+  "name": "wx-app",
+  "version": "1.0.0",
+  "description": "微信消息解密",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "bin": {
+    "my-app": "index.js"
+  },
+  "author": "bl",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.0.2"
+  }
+}
