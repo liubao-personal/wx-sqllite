@@ -77,6 +77,18 @@ function queryDatabase(query, params) {
   });
 }
 
+function queryMsgDatabase(query, params) {
+  return new Promise((resolve, reject) => {
+    msgDb.all(query, params, (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+}
+
 // 推送数据至服务器
 async function pushDataToServer(url, data, pageNum) {
   try {
@@ -176,10 +188,49 @@ async function chatRoomInfoFunction() {
 
 }
 
+// 推送微信联系人
+async function contactFunction() {
+  const [{ count }] = await queryDatabase('SELECT count(1) as count FROM Contact');
+  writeLog(`[微信联系人条数]：${JSON.stringify(count)}`);
+  const contactList = [];
+  for (let i = 0; i < count; i += BATCH_SIZE) {
+    writeLog(`[微信联系人查询第${Math.ceil(i / BATCH_SIZE) + 1}页]`);
+    const rows = await queryDatabase('SELECT * FROM Contact limit ? offset ?', [BATCH_SIZE, i]);
+    rows.forEach(row => {
+      if (row.ExtraBuf) {
+        row.ExtraBuf = '';
+      }
+      row.pusherAccount = weChatInfo['Account'];
+      row.pusherNickName = weChatInfo['NickName'];
+      row.pusherMobile = weChatInfo['Mobile'];
+      row.pusherKey = weChatInfo['Key'];
+      contactList.push(row);
+    });
+  }
+  const chunkedRequests = [];
+  for (let i = 0; i < contactList.length; i += BATCH_SIZE) {
+    chunkedRequests.push(contactList.slice(i, i + BATCH_SIZE));
+  }
+
+  const sendRequests = async () => {
+    for (let i = 0; i < chunkedRequests.length; i++) {
+      const chunkedArray = chunkedRequests[i];
+      const pageNum = i + 1;
+      writeLog(`[推送微信联系人第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushContactUrl}`)}, body: ${JSON.stringify({
+        list: chunkedArray
+      })}`);
+      await pushDataToServer(`${config.url + config.pushContactUrl}`, chunkedArray, pageNum);
+      await delay(DELAY_BETWEEN_REQUESTS);
+    }
+  }
+  sendRequests();
+}
+
 microDb.serialize(async () => {
   try {
     await chatRoomFunction();
     await chatRoomInfoFunction();
+    await contactFunction();
   } catch (error) {
     console.error('Error:', error);
   }

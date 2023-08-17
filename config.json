@@ -1,5 +1,6 @@
 {
   "url": "http://localhost:48080/admin-api",
   "pushChatRoomUrl": "/scrm/wx/wx-chatroom/push-chatroom",
-  "pushChatRoomInfoUrl": "/scrm/wx/wx-chatroom/push-chatroom/info"
+  "pushChatRoomInfoUrl": "/scrm/wx/wx-chatroom/push-chatroom/info",
+  "pushContactUrl": "/scrm/wx/wx-chatroom/push-contact"
 }
