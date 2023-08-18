@@ -195,7 +195,7 @@ async function contactFunction() {
   const contactList = [];
   for (let i = 0; i < count; i += BATCH_SIZE) {
     writeLog(`[微信联系人查询第${Math.ceil(i / BATCH_SIZE) + 1}页]`);
-    const rows = await queryDatabase('SELECT * FROM Contact limit ? offset ?', [BATCH_SIZE, i]);
+    const rows = await queryDatabase('SELECT Contact.*,ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl FROM Contact LEFT JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName limit ? offset ?', [BATCH_SIZE, i]);
     rows.forEach(row => {
       if (row.ExtraBuf) {
         row.ExtraBuf = '';
@@ -228,9 +228,9 @@ async function contactFunction() {
 
 microDb.serialize(async () => {
   try {
-    await chatRoomFunction();
-    await chatRoomInfoFunction();
-    await contactFunction();
+    await chatRoomFunction(); // 同步微信群
+    await chatRoomInfoFunction(); // 同步微信群公告
+    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
   } catch (error) {
     console.error('Error:', error);
   }
@@ -249,23 +249,23 @@ msgDb.serialize(() => {
     }
   });
 });
-
+1
 // 等待一段时间后退出应用程序
-setTimeout(() => {
-  microDb.close((err) => {
-    if (err) {
-      console.error(err.message);
-    } else {
-      console.log('microDb数据库连接已关闭');
-    }
-  })
-  msgDb.close((err) => {
-    if (err) {
-      console.error(err.message);
-    } else {
-      console.log('msg数据库连接已关闭');
-    }
-    process.exit(); // 退出应用程序
-  });
-}, 10000); // 5秒后退出
+// setTimeout(() => {
+//   microDb.close((err) => {
+//     if (err) {
+//       console.error(err.message);
+//     } else {
+//       console.log('microDb数据库连接已关闭');
+//     }
+//   })
+//   msgDb.close((err) => {
+//     if (err) {
+//       console.error(err.message);
+//     } else {
+//       console.log('msg数据库连接已关闭');
+//     }
+//     process.exit(); // 退出应用程序
+//   });
+// }, 10000); // 5秒后退出
 
