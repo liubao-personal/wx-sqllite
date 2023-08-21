@@ -1,15 +1,12 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
+const http = require('http');
 
-// 配置信息
-const configData = fs.readFileSync('./config.json', 'utf8');
-const config = JSON.parse(configData);
+// 读取配置信息文件
+const config = require('./config.json');
+const weChatInfo = require('./wechat_info.json');
 
-// 上传微信人
-const weChatData = fs.readFileSync('./wechat_info.json', 'utf8');
-const weChatInfo = JSON.parse(weChatData);
 
 function writeLog(logMessage) {
   const currentDate = new Date();
@@ -19,7 +16,7 @@ function writeLog(logMessage) {
   const formattedDate = `${year}-${month}-${day}`;
   const currentDateTime = currentDate.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, '$1');
 
-  const logDirectory = path.join(__dirname, 'logs');
+  const logDirectory = './logs';
   const logFilePath = path.join(logDirectory, `${formattedDate}.log`);
   logMessage = '\n' + formattedDate + ' ' + currentDateTime + '\n' + logMessage;
 
@@ -91,19 +88,38 @@ function queryMsgDatabase(query, params) {
 
 // 推送数据至服务器
 async function pushDataToServer(url, data, pageNum) {
-  try {
-    const result = await axios.post(url, {
-      list: data
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
+  const postData = JSON.stringify({
+    list: data
+  });
+
+  const options = {
+    hostname: config.hostname,
+    port: config.port,
+    path: url,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+
+  const req = http.request(options, (res) => {
+    let responseBody = '';
+
+    res.on('data', (chunk) => {
+      responseBody += chunk;
     });
 
-    writeLog(`[推送${url}第${pageNum}页结果]：` + JSON.stringify(result.data));
-  } catch (error) {
+    res.on('end', () => {
+      writeLog(`[推送${url}第${pageNum}页结果]：` + responseBody);
+    });
+  });
+
+  req.on('error', (error) => {
     console.error('Error:', error);
-  }
+  });
+
+  req.write(postData);
+  req.end();
 }
 
 // chatroom同步方法
@@ -233,6 +249,7 @@ microDb.serialize(async () => {
     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
   } catch (error) {
     console.error('Error:', error);
+    process.exit(); // 退出应用程序
   }
 });
 
@@ -249,23 +266,4 @@ msgDb.serialize(() => {
     }
   });
 });
-1
-// 等待一段时间后退出应用程序
-// setTimeout(() => {
-//   microDb.close((err) => {
-//     if (err) {
-//       console.error(err.message);
-//     } else {
-//       console.log('microDb数据库连接已关闭');
-//     }
-//   })
-//   msgDb.close((err) => {
-//     if (err) {
-//       console.error(err.message);
-//     } else {
-//       console.log('msg数据库连接已关闭');
-//     }
-//     process.exit(); // 退出应用程序
-//   });
-// }, 10000); // 5秒后退出
 

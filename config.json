@@ -1,5 +1,7 @@
 {
-  "url": "http://localhost:48080/admin-api",
+  "hostname": "localhost",
+  "port": 48080,
+  "url": "/admin-api",
   "pushChatRoomUrl": "/scrm/wx/wx-chatroom/push-chatroom",
   "pushChatRoomInfoUrl": "/scrm/wx/wx-chatroom/push-chatroom/info",
   "pushContactUrl": "/scrm/wx/wx-chatroom/push-contact",

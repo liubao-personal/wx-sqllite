@@ -4,10 +4,17 @@
   "description": "微信消息解密",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "pkg": "pkg -t node14-win-x64 index.js -o my-app.exe -d"
   },
   "bin": {
     "my-app": "index.js"
+  },
+  "pkg": {
+    "scripts": ["index.js"],
+    "targets": [
+      "node14-win-x64"
+    ]
   },
   "author": "bl",
   "license": "MIT",
