@@ -61,6 +61,10 @@ function delay(ms) {
   });
 }
 
+function decodeUnicodeEscapes(input) {
+  return input.replace(/[^\x20-\x7E]+|\n/g, '');
+}
+
 // 查询数据库并返回 Promise
 function queryDatabase(query, params) {
   return new Promise((resolve, reject) => {
@@ -253,17 +257,66 @@ microDb.serialize(async () => {
   }
 });
 
+// 同步微信消息
+async function msgFunction() {
+  const [{ count }] = await queryMsgDatabase('SELECT count(1) as count FROM MSG');
+  writeLog(`[微信消息条数]：${JSON.stringify(count)}`);
+  const msgList = [];
+  for (let i = 0; i < count; i += BATCH_SIZE) {
+    writeLog(`[微信消息查询第${Math.ceil(i / BATCH_SIZE) + 1}页]`);
+    const rows = await queryMsgDatabase('SELECT * FROM MSG limit ? offset ?', [BATCH_SIZE, i]);
+    rows.forEach(row => {
+      row.pusherAccount = weChatInfo['Account'];
+      row.pusherNickName = weChatInfo['NickName'];
+      row.pusherMobile = weChatInfo['Mobile'];
+      row.pusherKey = weChatInfo['Key'];
+      if (row.CreateTime) {
+        row.SendTime = new Date(row.CreateTime * 1000);
+        delete row.CreateTime;
+      }
+      if (row.CompressContent) {
+        row.CompressContent = '';
+      }
+      if (row.BytesExtra) {
+        let BytesExtra = row.BytesExtra.toString('utf8');
+        BytesExtra = decodeUnicodeEscapes(BytesExtra);
+        row.BytesExtra = BytesExtra;
+      }
+      if (row.BytesTrans) {
+        row.BytesTrans = '';
+      }
+      msgList.push(row);
+    });
+    console.log(rows);
+  }
+  const chunkedRequests = [];
+  for (let i = 0; i < msgList.length; i += BATCH_SIZE) {
+    chunkedRequests.push(msgList.slice(i, i + BATCH_SIZE));
+  }
+
+  const sendRequests = async () => {
+    for (let i = 0; i < chunkedRequests.length; i++) {
+      const chunkedArray = chunkedRequests[i];
+      const pageNum = i + 1;
+      writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
+        list: chunkedArray
+      })}`);
+      await pushDataToServer(`${config.url + config.pushMsgUrl}`, chunkedArray, pageNum);
+      await delay(DELAY_BETWEEN_REQUESTS);
+    }
+  }
+
+  sendRequests();
+}
 
 // 查询msg数据
-msgDb.serialize(() => {
-  msgDb.each('SELECT * FROM MSG limit 10', (err, row) => {
-    if (err) {
-      console.error('msgDb', err.message);
-    } else {
-      let BytesExtra = row.BytesExtra
-      BytesExtra = BytesExtra.toString('utf-8')
-      // console.log(row.localId, row.StrContent, BytesExtra);
-    }
-  });
+msgDb.serialize(async () => {
+  try {
+    await msgFunction();
+  }catch (error) {
+    console.error('Error:', error);
+    writeLog(`[同步微信消息失败]：${JSON.stringify(error)}`);
+    process.exit();
+  }
 });
 

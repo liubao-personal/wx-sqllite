@@ -5,5 +5,6 @@
   "pushChatRoomUrl": "/scrm/wx/wx-chatroom/push-chatroom",
   "pushChatRoomInfoUrl": "/scrm/wx/wx-chatroom/push-chatroom/info",
   "pushContactUrl": "/scrm/wx/wx-chatroom/push-contact",
-  "pushContactHeadImgUrl": "/scrm/wx/wx-chatroom/push-contact/head-img-url"
+  "pushContactHeadImgUrl": "/scrm/wx/wx-chatroom/push-contact/head-img-url",
+  "pushMsgUrl": "/scrm/wx/wx-chatroom/push-msg"
 }
