@@ -61,8 +61,11 @@ function delay(ms) {
   });
 }
 
+// 正则匹配出解析二进制得到的首个字符串
 function decodeUnicodeEscapes(input) {
-  return input.replace(/[^\x20-\x7E]+|\n/g, '');
+  const regex = /[\w\d-]+/g;
+  const match = input.match(regex);
+  return match ? match[0].trim() : null;
 }
 
 // 查询数据库并返回 Promise
@@ -277,17 +280,25 @@ async function msgFunction() {
       if (row.CompressContent) {
         row.CompressContent = '';
       }
-      if (row.BytesExtra) {
+      if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom")) && row.IsSender !== 1) {
         let BytesExtra = row.BytesExtra.toString('utf8');
         BytesExtra = decodeUnicodeEscapes(BytesExtra);
-        row.BytesExtra = BytesExtra;
+        row.Talker = BytesExtra;
+        row.MsgType = 1; // 群聊
+      } else if (row.IsSender === 1){ // 本人发的消息
+        row.Talker = weChatInfo.NickName;
+        row.MsgType = 2; // 单聊
+      } else {
+        row.Talker = row.StrTalker
+        row.MsgType = 2; // 单聊
       }
+      writeLog(`${row.localId + "=====" + row.Talker}`)
+      row.BytesExtra = ''
       if (row.BytesTrans) {
         row.BytesTrans = '';
       }
       msgList.push(row);
     });
-    console.log(rows);
   }
   const chunkedRequests = [];
   for (let i = 0; i < msgList.length; i += BATCH_SIZE) {
