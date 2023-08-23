@@ -249,16 +249,16 @@ async function contactFunction() {
   sendRequests();
 }
 
-// microDb.serialize(async () => {
-//   try {
-//     await chatRoomFunction(); // 同步微信群
-//     await chatRoomInfoFunction(); // 同步微信群公告
-//     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
-//   } catch (error) {
-//     console.error('Error:', error);
-//     process.exit(); // 退出应用程序
-//   }
-// });
+microDb.serialize(async () => {
+  try {
+    await chatRoomFunction(); // 同步微信群
+    await chatRoomInfoFunction(); // 同步微信群公告
+    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+  } catch (error) {
+    console.error('Error:', error);
+    process.exit(); // 退出应用程序
+  }
+});
 
 // 同步微信消息
 async function msgFunction() {
