@@ -63,7 +63,7 @@ function delay(ms) {
 
 // 正则匹配出解析二进制得到的首个字符串
 function decodeUnicodeEscapes(input) {
-  const regex = /[\w\d-]+/g;
+  const regex = /[\w\d-@$]+/g;
   const match = input.match(regex);
   return match ? match[0].trim() : null;
 }
@@ -249,16 +249,16 @@ async function contactFunction() {
   sendRequests();
 }
 
-microDb.serialize(async () => {
-  try {
-    await chatRoomFunction(); // 同步微信群
-    await chatRoomInfoFunction(); // 同步微信群公告
-    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
-  } catch (error) {
-    console.error('Error:', error);
-    process.exit(); // 退出应用程序
-  }
-});
+// microDb.serialize(async () => {
+//   try {
+//     await chatRoomFunction(); // 同步微信群
+//     await chatRoomInfoFunction(); // 同步微信群公告
+//     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+//   } catch (error) {
+//     console.error('Error:', error);
+//     process.exit(); // 退出应用程序
+//   }
+// });
 
 // 同步微信消息
 async function msgFunction() {
@@ -284,6 +284,9 @@ async function msgFunction() {
         let BytesExtra = row.BytesExtra.toString('utf8');
         BytesExtra = decodeUnicodeEscapes(BytesExtra);
         row.Talker = BytesExtra;
+        if (BytesExtra.length < 3) {
+          row.Talker = '公告消息';
+        }
         row.MsgType = 1; // 群聊
       } else if (row.IsSender === 1){ // 本人发的消息
         row.Talker = weChatInfo.NickName;
