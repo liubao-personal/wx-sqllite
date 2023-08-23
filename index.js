@@ -153,9 +153,9 @@ async function chatRoomFunction() {
       });
       const pageNum = Math.ceil(i / BATCH_SIZE) + 1;
 
-      writeLog(`[推送chatroomList第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushChatRoomUrl}`)}, body: ${JSON.stringify({
-        list: rows
-      })}`);
+      // writeLog(`[推送chatroomList第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushChatRoomUrl}`)}, body: ${JSON.stringify({
+      //   list: rows
+      // })}`);
 
       await pushDataToServer(`${config.url + config.pushChatRoomUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
@@ -186,9 +186,9 @@ async function chatRoomInfoFunction() {
       const chunkedArray = chunkedRequests[i];
       const pageNum = i + 1;
 
-      writeLog(`[推送chatroomInfo第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushChatRoomInfoUrl}`)}, body: ${JSON.stringify({
-        list: chunkedArray
-      })}`);
+      // writeLog(`[推送chatroomInfo第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushChatRoomInfoUrl}`)}, body: ${JSON.stringify({
+      //   list: chunkedArray
+      // })}`);
 
       await pushDataToServer(`${config.url + config.pushChatRoomInfoUrl}`, chunkedArray, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
@@ -215,9 +215,9 @@ async function contactFunction() {
         row.pusherKey = weChatInfo['Key'];
       });
       const pageNum = Math.ceil(i / BATCH_SIZE) + 1;
-      writeLog(`[推送微信联系人第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushContactUrl}`)}, body: ${JSON.stringify({
-        list: rows
-      })}`);
+      // writeLog(`[推送微信联系人第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushContactUrl}`)}, body: ${JSON.stringify({
+      //   list: rows
+      // })}`);
       await pushDataToServer(`${config.url + config.pushContactUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
@@ -276,9 +276,9 @@ async function msgFunction() {
         }
       });
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
-      writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
-        list: rows
-      })}`);
+      // writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
+      //   list: rows
+      // })}`);
       await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
