@@ -1,4 +1,7 @@
 {
+  "BATCH_SIZE": 300,
+  "BATCH_SIZE_MSG": 500,
+  "DELAY_BETWEEN_REQUESTS": 1000,
   "hostname": "localhost",
   "port": 48080,
   "url": "/admin-api",

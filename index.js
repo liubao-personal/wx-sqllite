@@ -51,8 +51,9 @@ const microDb = new sqlite3.Database('MicroMsg.db');
 const msgDb = new sqlite3.Database(lastDbFile);
 
 // 微信基础数据
-const BATCH_SIZE = 100; // 分割条数
-const DELAY_BETWEEN_REQUESTS = 1000; // 1秒的延迟
+const BATCH_SIZE = config.BATCH_SIZE; // 分割条数
+const BATCH_SIZE_MSG = config.BATCH_SIZE_MSG; // 分割条数-消息
+const DELAY_BETWEEN_REQUESTS = config.DELAY_BETWEEN_REQUESTS; // 延迟时间ms
 
 // 延迟时长方法
 function delay(ms) {
@@ -134,12 +135,11 @@ async function chatRoomFunction() {
   // 同步chatroom表
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM ChatRoom');
 
-  writeLog(`[chatroom微信群条数]：${JSON.stringify(count)}`);
+  writeLog(`[chatroom微信群条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
 
   const chatroomList = [];
 
   for (let i = 0; i < count; i += BATCH_SIZE) {
-    writeLog(`[chatroom查询微信群页数]第${Math.ceil(i / BATCH_SIZE) + 1}页`);
 
     const rows = await queryDatabase('SELECT * FROM ChatRoom limit ? offset ?', [BATCH_SIZE, i]);
 
@@ -214,10 +214,9 @@ async function chatRoomInfoFunction() {
 // 推送微信联系人
 async function contactFunction() {
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM Contact');
-  writeLog(`[微信联系人条数]：${JSON.stringify(count)}`);
+  writeLog(`[微信联系人条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
   const contactList = [];
   for (let i = 0; i < count; i += BATCH_SIZE) {
-    writeLog(`[微信联系人查询第${Math.ceil(i / BATCH_SIZE) + 1}页]`);
     const rows = await queryDatabase('SELECT Contact.*,ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl FROM Contact LEFT JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName limit ? offset ?', [BATCH_SIZE, i]);
     rows.forEach(row => {
       if (row.ExtraBuf) {
@@ -263,59 +262,47 @@ microDb.serialize(async () => {
 // 同步微信消息
 async function msgFunction() {
   const [{ count }] = await queryMsgDatabase('SELECT count(1) as count FROM MSG');
-  writeLog(`[微信消息条数]：${JSON.stringify(count)}`);
-  const msgList = [];
-  for (let i = 0; i < count; i += BATCH_SIZE) {
-    writeLog(`[微信消息查询第${Math.ceil(i / BATCH_SIZE) + 1}页]`);
-    const rows = await queryMsgDatabase('SELECT * FROM MSG limit ? offset ?', [BATCH_SIZE, i]);
-    rows.forEach(row => {
-      row.pusherAccount = weChatInfo['Account'];
-      row.pusherNickName = weChatInfo['NickName'];
-      row.pusherMobile = weChatInfo['Mobile'];
-      row.pusherKey = weChatInfo['Key'];
-      if (row.CreateTime) {
-        row.SendTime = new Date(row.CreateTime * 1000);
-        delete row.CreateTime;
-      }
-      if (row.CompressContent) {
-        row.CompressContent = '';
-      }
-      if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom")) && row.IsSender !== 1) {
-        let BytesExtra = row.BytesExtra.toString('utf8');
-        BytesExtra = decodeUnicodeEscapes(BytesExtra);
-        row.Talker = BytesExtra;
-        if (BytesExtra.length < 3) {
-          row.Talker = '公告消息';
-        }
-        row.MsgType = 1; // 群聊
-      } else if (row.IsSender === 1){ // 本人发的消息
-        row.Talker = weChatInfo.NickName;
-        row.MsgType = 2; // 单聊
-      } else {
-        row.Talker = row.StrTalker
-        row.MsgType = 2; // 单聊
-      }
-      writeLog(`${row.localId + "=====" + row.Talker}`)
-      row.BytesExtra = ''
-      if (row.BytesTrans) {
-        row.BytesTrans = '';
-      }
-      msgList.push(row);
-    });
-  }
-  const chunkedRequests = [];
-  for (let i = 0; i < msgList.length; i += BATCH_SIZE) {
-    chunkedRequests.push(msgList.slice(i, i + BATCH_SIZE));
-  }
-
+  writeLog(`[微信消息条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE_MSG) + 1}页`);
   const sendRequests = async () => {
-    for (let i = 0; i < chunkedRequests.length; i++) {
-      const chunkedArray = chunkedRequests[i];
-      const pageNum = i + 1;
+    for (let i = 0; i < count; i += BATCH_SIZE_MSG) {
+      const rows = await queryMsgDatabase('SELECT * FROM MSG limit ? offset ?', [BATCH_SIZE_MSG, i]);
+      rows.forEach(row => {
+        row.pusherAccount = weChatInfo['Account'];
+        row.pusherNickName = weChatInfo['NickName'];
+        row.pusherMobile = weChatInfo['Mobile'];
+        row.pusherKey = weChatInfo['Key'];
+        if (row.CreateTime) {
+          row.SendTime = new Date(row.CreateTime * 1000);
+          delete row.CreateTime;
+        }
+        if (row.CompressContent) {
+          row.CompressContent = '';
+        }
+        if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom")) && row.IsSender !== 1) {
+          let BytesExtra = row.BytesExtra.toString('utf8');
+          BytesExtra = decodeUnicodeEscapes(BytesExtra);
+          row.Talker = BytesExtra;
+          if (BytesExtra.length < 3) {
+            row.Talker = '公告消息';
+          }
+          row.MsgType = 1; // 群聊
+        } else if (row.IsSender === 1) { // 本人发的消息
+          row.Talker = weChatInfo.NickName;
+          row.MsgType = 2; // 单聊
+        } else {
+          row.Talker = row.StrTalker
+          row.MsgType = 2; // 单聊
+        }
+        row.BytesExtra = ''
+        if (row.BytesTrans) {
+          row.BytesTrans = '';
+        }
+      });
+      const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
       writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
-        list: chunkedArray
+        list: rows
       })}`);
-      await pushDataToServer(`${config.url + config.pushMsgUrl}`, chunkedArray, pageNum);
+      await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
