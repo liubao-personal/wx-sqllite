@@ -137,43 +137,30 @@ async function chatRoomFunction() {
 
   writeLog(`[chatroom微信群条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
 
-  const chatroomList = [];
-
-  for (let i = 0; i < count; i += BATCH_SIZE) {
-
-    const rows = await queryDatabase('SELECT * FROM ChatRoom limit ? offset ?', [BATCH_SIZE, i]);
-
-    rows.forEach(row => {
-      if (row.RoomData) {
-        row.RoomData = '';
-      }
-      row.pusherAccount = weChatInfo['Account'];
-      row.pusherNickName = weChatInfo['NickName'];
-      row.pusherMobile = weChatInfo['Mobile'];
-      row.pusherKey = weChatInfo['Key'];
-      chatroomList.push(row);
-    });
-  }
-
-  const chunkedRequests = [];
-
-  for (let i = 0; i < chatroomList.length; i += BATCH_SIZE) {
-    chunkedRequests.push(chatroomList.slice(i, i + BATCH_SIZE));
-  }
-
   const sendRequests = async () => {
-    for (let i = 0; i < chunkedRequests.length; i++) {
-      const chunkedArray = chunkedRequests[i];
-      const pageNum = i + 1;
+    for (let i = 0; i < count; i += BATCH_SIZE) {
+
+      const rows = await queryDatabase('SELECT * FROM ChatRoom limit ? offset ?', [BATCH_SIZE, i]);
+
+      rows.forEach(row => {
+        if (row.RoomData) {
+          row.RoomData = '';
+        }
+        row.pusherAccount = weChatInfo['Account'];
+        row.pusherNickName = weChatInfo['NickName'];
+        row.pusherMobile = weChatInfo['Mobile'];
+        row.pusherKey = weChatInfo['Key'];
+      });
+      const pageNum = Math.ceil(i / BATCH_SIZE) + 1;
 
       writeLog(`[推送chatroomList第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushChatRoomUrl}`)}, body: ${JSON.stringify({
-        list: chunkedArray
+        list: rows
       })}`);
 
-      await pushDataToServer(`${config.url + config.pushChatRoomUrl}`, chunkedArray, pageNum);
+      await pushDataToServer(`${config.url + config.pushChatRoomUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
-  };
+  }
 
   await sendRequests();
 }
@@ -215,33 +202,23 @@ async function chatRoomInfoFunction() {
 async function contactFunction() {
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM Contact');
   writeLog(`[微信联系人条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
-  const contactList = [];
-  for (let i = 0; i < count; i += BATCH_SIZE) {
-    const rows = await queryDatabase('SELECT Contact.*,ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl FROM Contact LEFT JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName limit ? offset ?', [BATCH_SIZE, i]);
-    rows.forEach(row => {
-      if (row.ExtraBuf) {
-        row.ExtraBuf = '';
-      }
-      row.pusherAccount = weChatInfo['Account'];
-      row.pusherNickName = weChatInfo['NickName'];
-      row.pusherMobile = weChatInfo['Mobile'];
-      row.pusherKey = weChatInfo['Key'];
-      contactList.push(row);
-    });
-  }
-  const chunkedRequests = [];
-  for (let i = 0; i < contactList.length; i += BATCH_SIZE) {
-    chunkedRequests.push(contactList.slice(i, i + BATCH_SIZE));
-  }
-
   const sendRequests = async () => {
-    for (let i = 0; i < chunkedRequests.length; i++) {
-      const chunkedArray = chunkedRequests[i];
-      const pageNum = i + 1;
+    for (let i = 0; i < count; i += BATCH_SIZE) {
+      const rows = await queryDatabase('SELECT Contact.*,ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl FROM Contact LEFT JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName limit ? offset ?', [BATCH_SIZE, i]);
+      rows.forEach(row => {
+        if (row.ExtraBuf) {
+          row.ExtraBuf = '';
+        }
+        row.pusherAccount = weChatInfo['Account'];
+        row.pusherNickName = weChatInfo['NickName'];
+        row.pusherMobile = weChatInfo['Mobile'];
+        row.pusherKey = weChatInfo['Key'];
+      });
+      const pageNum = Math.ceil(i / BATCH_SIZE) + 1;
       writeLog(`[推送微信联系人第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushContactUrl}`)}, body: ${JSON.stringify({
-        list: chunkedArray
+        list: rows
       })}`);
-      await pushDataToServer(`${config.url + config.pushContactUrl}`, chunkedArray, pageNum);
+      await pushDataToServer(`${config.url + config.pushContactUrl}`, rows, pageNum);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
