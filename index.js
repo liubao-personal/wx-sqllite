@@ -135,7 +135,7 @@ async function chatRoomFunction() {
   // 同步chatroom表
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM ChatRoom');
 
-  writeLog(`[chatroom微信群条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
+  writeLog(`[微信群条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
 
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE) {
@@ -174,7 +174,7 @@ async function chatRoomInfoFunction() {
     row.pusherMobile = weChatInfo['Mobile'];
     row.pusherKey = weChatInfo['Key'];
   });
-
+  writeLog(`[微信群公告条数]：${JSON.stringify(chatRoomInfoList.length)},共${Math.ceil(chatRoomInfoList.length / BATCH_SIZE) + 1}页`);
 
   const chunkedRequests = [];
 
@@ -225,16 +225,17 @@ async function contactFunction() {
   sendRequests();
 }
 
-microDb.serialize(async () => {
+(async () => {
   try {
     await chatRoomFunction(); // 同步微信群
     await chatRoomInfoFunction(); // 同步微信群公告
     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+    await msgFunction();
   } catch (error) {
     console.error('Error:', error);
     process.exit(); // 退出应用程序
   }
-});
+})();
 
 // 同步微信消息
 async function msgFunction() {
@@ -287,14 +288,4 @@ async function msgFunction() {
   sendRequests();
 }
 
-// 查询msg数据
-msgDb.serialize(async () => {
-  try {
-    await msgFunction();
-  }catch (error) {
-    console.error('Error:', error);
-    writeLog(`[同步微信消息失败]：${JSON.stringify(error)}`);
-    process.exit();
-  }
-});
 
