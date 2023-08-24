@@ -134,8 +134,8 @@ async function pushDataToServer(url, data, pageNum) {
 async function chatRoomFunction() {
   // 同步chatroom表
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM ChatRoom');
-
-  writeLog(`[微信群条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
+  const countPage = Math.ceil(count / BATCH_SIZE);
+  writeLog(`[微信群条数]：${JSON.stringify(count)},共${countPage}页`);
 
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE) {
@@ -158,6 +158,7 @@ async function chatRoomFunction() {
       // })}`);
 
       await pushDataToServer(`${config.url + config.pushChatRoomUrl}`, rows, pageNum);
+      writeLog(`[推送微信群进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
@@ -174,7 +175,9 @@ async function chatRoomInfoFunction() {
     row.pusherMobile = weChatInfo['Mobile'];
     row.pusherKey = weChatInfo['Key'];
   });
-  writeLog(`[微信群公告条数]：${JSON.stringify(chatRoomInfoList.length)},共${Math.ceil(chatRoomInfoList.length / BATCH_SIZE) + 1}页`);
+  const countPage = Math.ceil(chatRoomInfoList.length / BATCH_SIZE);
+
+  writeLog(`[微信群公告条数]：${JSON.stringify(chatRoomInfoList.length)},共${countPage}页`);
 
   const chunkedRequests = [];
 
@@ -191,6 +194,7 @@ async function chatRoomInfoFunction() {
       // })}`);
 
       await pushDataToServer(`${config.url + config.pushChatRoomInfoUrl}`, chunkedArray, pageNum);
+      writeLog(`[推送微信群公告进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   };
@@ -201,7 +205,8 @@ async function chatRoomInfoFunction() {
 // 推送微信联系人
 async function contactFunction() {
   const [{ count }] = await queryDatabase('SELECT count(1) as count FROM Contact');
-  writeLog(`[微信联系人条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE) + 1}页`);
+  const countPage = Math.ceil(count / BATCH_SIZE);
+  writeLog(`[微信联系人条数]：${JSON.stringify(count)},共${countPage}页`);
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE) {
       const rows = await queryDatabase('SELECT Contact.*,ContactHeadImgUrl.smallHeadImgUrl, ContactHeadImgUrl.bigHeadImgUrl FROM Contact LEFT JOIN ContactHeadImgUrl ON Contact.UserName = ContactHeadImgUrl.usrName limit ? offset ?', [BATCH_SIZE, i]);
@@ -219,6 +224,7 @@ async function contactFunction() {
       //   list: rows
       // })}`);
       await pushDataToServer(`${config.url + config.pushContactUrl}`, rows, pageNum);
+      writeLog(`[推送微信联系人进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
@@ -227,9 +233,9 @@ async function contactFunction() {
 
 (async () => {
   try {
-    await chatRoomFunction(); // 同步微信群
-    await chatRoomInfoFunction(); // 同步微信群公告
-    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+    // await chatRoomFunction(); // 同步微信群
+    // await chatRoomInfoFunction(); // 同步微信群公告
+    // await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
     await msgFunction();
   } catch (error) {
     console.error('Error:', error);
@@ -240,7 +246,8 @@ async function contactFunction() {
 // 同步微信消息
 async function msgFunction() {
   const [{ count }] = await queryMsgDatabase('SELECT count(1) as count FROM MSG');
-  writeLog(`[微信消息条数]：${JSON.stringify(count)},共${Math.ceil(count / BATCH_SIZE_MSG) + 1}页`);
+  const countPage = Math.ceil(count / BATCH_SIZE_MSG);
+  writeLog(`[微信消息条数]：${JSON.stringify(count)},共${countPage}页`);
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE_MSG) {
       const rows = await queryMsgDatabase('SELECT * FROM MSG limit ? offset ?', [BATCH_SIZE_MSG, i]);
@@ -281,6 +288,7 @@ async function msgFunction() {
       //   list: rows
       // })}`);
       await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
+      writeLog(`[推送微信消息进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
