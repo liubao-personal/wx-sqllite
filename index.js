@@ -4,8 +4,8 @@ const path = require('path');
 const http = require('http');
 
 // 读取配置信息文件
-const config = require('./config.json');
-const weChatInfo = require('./wechat_info.json');
+const config = require(path.join(process.cwd(), './config.json'));
+const weChatInfo = require(path.join(process.cwd(), './wechat_info.json'));
 
 
 function writeLog(logMessage) {
