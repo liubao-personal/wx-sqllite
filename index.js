@@ -141,6 +141,9 @@ async function chatRoomFunction() {
     for (let i = 0; i < count; i += BATCH_SIZE) {
 
       const rows = await queryDatabase('SELECT ChatRoom.*,ChatRoomInfo.Announcement,Contact.NickName,Contact.Remark FROM ChatRoom LEFT JOIN ChatRoomInfo ON ChatRoom.ChatRoomName = ChatRoomInfo.ChatRoomName LEFT JOIN Contact ON ChatRoom.ChatRoomName = Contact.UserName limit ? offset ?', [BATCH_SIZE, i]);
+      let UserNames = rows.map(row => row.Reserved2);
+      UserNames = '\'' + UserNames.join('\',\'') + '\'';
+      const contactRows = await queryDatabase('SELECT UserName,NickName,Remark FROM Contact WHERE UserName in (' + UserNames + ')');
 
       rows.forEach(row => {
         if (row.RoomData) {
@@ -151,6 +154,10 @@ async function chatRoomFunction() {
         row.pusherNickName = weChatInfo['NickName'];
         row.pusherMobile = weChatInfo['Mobile'];
         row.pusherKey = weChatInfo['Key'];
+        const contact = contactRows.find(contact => contact.UserName === row.Reserved2);
+        if (contact) {
+          row.Reserved2NickName = contact.Remark ? contact.Remark : contact.NickName;
+        }
       });
       const pageNum = Math.ceil(i / BATCH_SIZE) + 1;
 
