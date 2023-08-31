@@ -140,12 +140,13 @@ async function chatRoomFunction() {
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE) {
 
-      const rows = await queryDatabase('SELECT * FROM ChatRoom limit ? offset ?', [BATCH_SIZE, i]);
+      const rows = await queryDatabase('SELECT ChatRoom.*,ChatRoomInfo.Announcement,Contact.NickName,Contact.Remark FROM ChatRoom LEFT JOIN ChatRoomInfo ON ChatRoom.ChatRoomName = ChatRoomInfo.ChatRoomName LEFT JOIN Contact ON ChatRoom.ChatRoomName = Contact.UserName limit ? offset ?', [BATCH_SIZE, i]);
 
       rows.forEach(row => {
         if (row.RoomData) {
           row.RoomData = '';
         }
+        row.ChatRoomNameRemark = row.Remark ? row.Remark: row.NickName;
         row.pusherAccount = weChatInfo['Account'];
         row.pusherNickName = weChatInfo['NickName'];
         row.pusherMobile = weChatInfo['Mobile'];
@@ -248,6 +249,10 @@ async function msgFunction() {
   const [{ count }] = await queryMsgDatabase('SELECT count(1) as count FROM MSG');
   const countPage = Math.ceil(count / BATCH_SIZE_MSG);
   writeLog(`[微信消息条数]：${JSON.stringify(count)},共${countPage}页`);
+
+  const queryContactDatabase = async (UserNames) => {
+    return await queryDatabase('SELECT UserName,NickName,Remark FROM Contact WHERE UserName in (' + UserNames + ')');
+  };
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE_MSG) {
       const rows = await queryMsgDatabase('SELECT * FROM MSG limit ? offset ?', [BATCH_SIZE_MSG, i]);
@@ -283,6 +288,15 @@ async function msgFunction() {
           row.BytesTrans = '';
         }
       });
+      let UserNames = rows.map(row => row.Talker);
+      UserNames = '\'' + UserNames.join('\',\'') + '\'';
+      const contactRows = await queryContactDatabase(UserNames);
+      rows.forEach(row => {
+        const contact = contactRows.find(contact => contact.UserName === row.Talker);
+        if (contact) {
+          row.TalkerNickName = contact.Remark ? contact.Remark : contact.NickName;
+        }
+      })
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
       // writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
       //   list: rows
