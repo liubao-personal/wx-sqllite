@@ -269,7 +269,14 @@ async function msgFunction() {
         row.pusherMobile = weChatInfo['Mobile'];
         row.pusherKey = weChatInfo['Key'];
         if (row.CreateTime) {
-          row.SendTime = new Date(row.CreateTime * 1000);
+          const date = new Date(row.CreateTime * 1000);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          const createTime = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
           delete row.CreateTime;
         }
         if (row.CompressContent) {
@@ -305,9 +312,9 @@ async function msgFunction() {
         }
       })
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
-      // writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
-      //   list: rows
-      // })}`);
+      writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
+        list: rows
+      })}`);
       await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
       writeLog(`[推送微信消息进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
