@@ -276,7 +276,7 @@ async function msgFunction() {
           const hours = String(date.getHours()).padStart(2, '0');
           const minutes = String(date.getMinutes()).padStart(2, '0');
           const seconds = String(date.getSeconds()).padStart(2, '0');
-          const createTime = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+          row.SendTime  = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
           delete row.CreateTime;
         }
         if (row.CompressContent) {
@@ -312,9 +312,6 @@ async function msgFunction() {
         }
       })
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
-      writeLog(`[推送微信消息第${pageNum}页]：url: ${JSON.stringify(`${config.url + config.pushMsgUrl}`)}, body: ${JSON.stringify({
-        list: rows
-      })}`);
       await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
       writeLog(`[推送微信消息进度]：${Math.floor(pageNum / countPage * 100)}%`);
       await delay(DELAY_BETWEEN_REQUESTS);
