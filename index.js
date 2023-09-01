@@ -285,16 +285,19 @@ async function msgFunction() {
         if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom")) && row.IsSender !== 1) {
           let BytesExtra = row.BytesExtra.toString('utf8');
           BytesExtra = decodeUnicodeEscapes(BytesExtra);
-          row.Talker = BytesExtra;
+          row.Talker = BytesExtra; // 消息发送人
           if (BytesExtra.length < 3) {
-            row.Talker = '公告消息';
+            row.Talker = '';
+            row.StrTalkerNickName = '公告消息';
           }
           row.MsgType = 1; // 群聊
         } else if (row.IsSender === 1) { // 本人发的消息
-          row.Talker = weChatInfo.NickName;
+          row.Talker = '';
+          row.StrTalkerNickName = weChatInfo.NickName;
           row.MsgType = 2; // 单聊
         } else {
           row.Talker = row.StrTalker
+          row.StrTalkerNickName = row.StrTalker
           row.MsgType = 2; // 单聊
         }
         row.BytesExtra = ''
@@ -304,11 +307,18 @@ async function msgFunction() {
       });
       let UserNames = rows.map(row => row.Talker);
       UserNames = '\'' + UserNames.join('\',\'') + '\'';
-      const contactRows = await queryContactDatabase(UserNames);
+
+      let StrTalkers = rows.map(row => row.StrTalker);
+      StrTalkers = '\'' + StrTalkers.join('\',\'') + '\'';
+      const [contactRows, StrTalkerRows] = await Promise.all([queryContactDatabase(UserNames), queryContactDatabase(StrTalkers)]);
       rows.forEach(row => {
         const contact = contactRows.find(contact => contact.UserName === row.Talker);
         if (contact) {
           row.TalkerNickName = contact.Remark ? contact.Remark : contact.NickName;
+        }
+        const StrTalker = StrTalkerRows.find(StrTalker => StrTalker.UserName === row.StrTalker);
+        if (StrTalker) {
+          row.StrTalkerNickName = StrTalker.Remark ? StrTalker.Remark : StrTalker.NickName;
         }
       })
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
