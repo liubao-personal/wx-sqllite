@@ -222,6 +222,18 @@ async function contactFunction() {
         if (row.ExtraBuf) {
           row.ExtraBuf = '';
         }
+        if (row.VerifyFlag === 0) {
+          if ([2, 268435458].includes(row.Type)) { // 社群和折叠的社群
+            row.ContactType = 2; // 社群
+          } else if ([4].includes(row.Type)) {
+            row.ContactType = 3; // 群友
+          } else {
+            row.ContactType = 1; // 好友
+          }
+        } else {
+          row.ContactType = 4; // 公众号
+        }
+
         row.pusherAccount = weChatInfo['Account'];
         row.pusherNickName = weChatInfo['NickName'];
         row.pusherMobile = weChatInfo['Mobile'];
