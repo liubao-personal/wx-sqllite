@@ -2,6 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 
 // 读取配置信息文件
 const config = require(path.join(process.cwd(), './config.json'));
@@ -100,6 +101,9 @@ async function pushDataToServer(url, data, pageNum) {
     list: data
   });
 
+  // 根据传递的 URL 决定使用 http 或 https 模块
+  const httpModule = config.httpModule === 'https' ? https : http;
+
   const options = {
     hostname: config.hostname,
     port: config.port,
@@ -110,7 +114,7 @@ async function pushDataToServer(url, data, pageNum) {
     }
   };
 
-  const req = http.request(options, (res) => {
+  const req = httpModule.request(options, (res) => {
     let responseBody = '';
 
     res.on('data', (chunk) => {
