@@ -178,6 +178,43 @@ async function chatRoomFunction() {
   await sendRequests();
 }
 
+// 同步社群成员
+async function chatRoomMembersFunction() {
+  const chatRoomRows = await queryDatabase('SELECT ChatRoom.ChatRoomName,Contact.Nickname,Contact.Remark,ChatRoom.UserNameList FROM ChatRoom LEFT JOIN Contact ON ChatRoom.ChatRoomName = Contact.UserName');
+  writeLog(`[微信群成员页数]：${JSON.stringify(chatRoomRows.length)}`);
+  for (let i = 0; i < chatRoomRows.length; i++) {
+    const row = chatRoomRows[i];
+    const chatRoomName = row.ChatRoomName; // 群id
+    const chatRoomNameRemark = row.Remark ? row.Remark : row.NickName; // 群名称
+    let userNameList = row.UserNameList;
+    userNameList = userNameList.split('^G'); // 群成员数组
+    let userNameListStr = '\'' + userNameList.join('\',\'') + '\'';
+    const contactRows = await queryDatabase('SELECT * FROM Contact WHERE UserName in (' + userNameListStr + ')');
+    let chatRoomMemberRows = [];
+    for (let j = 0; j < userNameList.length; j++) {
+      const userName = userNameList[j];
+      const contact = contactRows.find(contact => contact.UserName === userName);
+      if (contact) {
+        const chatRoomMemberRow = {
+          ChatRoomName: chatRoomName,
+          ChatRoomNameRemark: chatRoomNameRemark,
+          UserName: userName,
+          Alias: contact.Alias,
+          NickName: contact.NickName,
+          Remark: contact.Remark,
+          PusherAccount: weChatInfo['Account'],
+          PusherNickName: weChatInfo['NickName'],
+          PusherMobile: weChatInfo['Mobile'],
+          PusherKey: weChatInfo['Key']
+        };
+        chatRoomMemberRows.push(chatRoomMemberRow);
+      }
+    }
+    // 推送群成员
+    await pushDataToServer(`${config.url + config.pushChatRoomMemberUrl}`, chatRoomMemberRows, i + 1);
+  }
+}
+
 // chatroomInfo同步方法
 async function chatRoomInfoFunction() {
   const chatRoomInfoList = await queryDatabase('SELECT * FROM ChatRoomInfo');
@@ -258,6 +295,7 @@ async function contactFunction() {
 (async () => {
   try {
     await chatRoomFunction(); // 同步微信群
+    await chatRoomMembersFunction(); // 同步微信群成员
     await chatRoomInfoFunction(); // 同步微信群公告
     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
     await msgFunction();

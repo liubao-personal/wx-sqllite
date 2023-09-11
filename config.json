@@ -7,6 +7,7 @@
   "port": 443,
   "url": "/admin-api",
   "pushChatRoomUrl": "/scrm/wx/wx-chatroom/push-chatroom",
+  "pushChatRoomMemberUrl": "/scrm/wx/wx-chatroom/push-chatroom/members",
   "pushChatRoomInfoUrl": "/scrm/wx/wx-chatroom/push-chatroom/info",
   "pushContactUrl": "/scrm/wx/wx-chatroom/push-contact",
   "pushContactHeadImgUrl": "/scrm/wx/wx-chatroom/push-contact/head-img-url",
