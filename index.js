@@ -247,7 +247,7 @@ async function chatRoomInfoFunction() {
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   };
-  sendRequests();
+  await sendRequests();
 
 }
 
@@ -289,16 +289,16 @@ async function contactFunction() {
       await delay(DELAY_BETWEEN_REQUESTS);
     }
   }
-  sendRequests();
+  await sendRequests();
 }
 
 (async () => {
   try {
     await chatRoomFunction(); // 同步微信群
-    await chatRoomMembersFunction(); // 同步微信群成员
     await chatRoomInfoFunction(); // 同步微信群公告
     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
     await msgFunction();
+    await chatRoomMembersFunction(); // 同步微信群成员
   } catch (error) {
     console.error('Error:', error);
     process.exit(); // 退出应用程序
@@ -382,7 +382,7 @@ async function msgFunction() {
     }
   }
 
-  sendRequests();
+  await sendRequests();
 }
 
 
