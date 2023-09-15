@@ -336,7 +336,7 @@ async function msgFunction() {
         if (row.CompressContent) {
           row.CompressContent = '';
         }
-        if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom")) && row.IsSender !== 1) {
+        if (row.BytesExtra && (row.StrTalker && row.StrTalker.includes("@chatroom"))) {
           let BytesExtra = row.BytesExtra.toString('utf8');
           BytesExtra = decodeUnicodeEscapes(BytesExtra);
           row.Talker = BytesExtra; // 消息发送人
@@ -344,11 +344,16 @@ async function msgFunction() {
             row.Talker = '';
             row.StrTalkerNickName = '公告消息';
           }
+          if (row.IsSender === 1) { // 群中本人发的消息把发送人改成采集人
+            row.Talker = weChatInfo.Account;
+            row.TalkerNickName = weChatInfo.NickName;
+          }
           row.MsgType = 1; // 群聊
         } else if (row.IsSender === 1) { // 本人发的消息
-          row.Talker = '';
           row.StrTalkerNickName = weChatInfo.NickName;
           row.MsgType = 2; // 单聊
+          row.Talker = weChatInfo.Account;
+          row.TalkerNickName = weChatInfo.NickName;
         } else {
           row.Talker = row.StrTalker
           row.StrTalkerNickName = row.StrTalker
