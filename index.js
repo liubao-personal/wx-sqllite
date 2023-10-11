@@ -264,7 +264,7 @@ async function contactFunction() {
           row.ExtraBuf = '';
         }
         if (row.VerifyFlag === 0) {
-          if ([2, 268435458].includes(row.Type)) { // 社群和折叠的社群
+          if ([2, 268435458].includes(row.Type) || [1].includes(row.ChatRoomNotify)) { // 社群和折叠的社群
             row.ContactType = 2; // 社群
           } else if ([4].includes(row.Type)) {
             row.ContactType = 3; // 群友
