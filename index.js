@@ -98,7 +98,7 @@ function queryMsgDatabase(query, params) {
 // 推送数据至服务器
 async function pushDataToServer(url, data, pageNum) {
   const postData = JSON.stringify({
-    list: data
+    ...(pageNum ? { list: data } : { pusherAccount: weChatInfo.Account }),
   });
 
   // 根据传递的 URL 决定使用 http 或 https 模块
@@ -122,7 +122,10 @@ async function pushDataToServer(url, data, pageNum) {
     });
 
     res.on('end', () => {
-      writeLog(`[推送${url}第${pageNum}页结果]：` + responseBody);
+      const logMessage = pageNum
+        ? `[推送${url}第${pageNum}页结果]：${responseBody}`
+        : `[结束推送结果]：${responseBody}`;
+      writeLog(logMessage);
     });
   });
 
@@ -199,7 +202,7 @@ async function chatRoomMembersFunction() {
           ChatRoomName: chatRoomName,
           ChatRoomNameRemark: chatRoomNameRemark,
           UserName: userName,
-          Alias: contact.Alias,
+          Alias: contact.Alias || userName,
           NickName: contact.NickName,
           Remark: contact.Remark,
           PusherAccount: weChatInfo['Account'],
@@ -212,6 +215,8 @@ async function chatRoomMembersFunction() {
     }
     // 推送群成员
     await pushDataToServer(`${config.url + config.pushChatRoomMemberUrl}`, chatRoomMemberRows, i + 1);
+    writeLog(`[推送微信群成员进度]：${Math.floor(i / chatRoomRows.length * 100)}%`);
+    await delay(DELAY_BETWEEN_REQUESTS);
   }
 }
 
@@ -274,6 +279,7 @@ async function contactFunction() {
         } else {
           row.ContactType = 4; // 公众号
         }
+        row.Alias = row.Alias || row.UserName;
 
         row.pusherAccount = weChatInfo['Account'];
         row.pusherNickName = weChatInfo['NickName'];
@@ -299,6 +305,7 @@ async function contactFunction() {
     await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
     await msgFunction();
     await chatRoomMembersFunction(); // 同步微信群成员
+    await endFunction(); // 结束推送通知
   } catch (error) {
     console.error('Error:', error);
     process.exit(); // 退出应用程序
@@ -358,6 +365,17 @@ async function msgFunction() {
           row.Talker = row.StrTalker
           row.StrTalkerNickName = row.StrTalker
           row.MsgType = 2; // 单聊
+          // 处理特殊微信内置账号
+          if (row.StrTalker === 'weixin') {
+            row.StrTalkerNickName = '微信团队';
+          } else if (row.StrTalker === 'newsapp') {
+            row.StrTalkerNickName = '微信新闻';
+          }
+        }
+        if (row.StrContent.includes('<mmreader>')) { // 公众号消息
+          row.Type = 20000;
+        } else if (row.StrContent[0] === '[' && row.StrContent[row.StrContent.length - 1] === ']') { // 开头是'[',结尾是']'的内容
+          row.Type = 47; // 表情包
         }
         row.BytesExtra = ''
         if (row.BytesTrans) {
@@ -390,4 +408,8 @@ async function msgFunction() {
   await sendRequests();
 }
 
+async function endFunction() {
+  await pushDataToServer(`${config.url + config.pushEndUrl}`);
+  writeLog(`[推送结束]：${new Date()}`);
+}
 
