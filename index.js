@@ -203,6 +203,7 @@ async function chatRoomMembersFunction() {
           ChatRoomNameRemark: chatRoomNameRemark,
           UserName: userName,
           Alias: contact.Alias || userName,
+          UserType: userName.includes('@openim') ? 20 : 10, // 10:微信客户 20:企微客户
           NickName: contact.NickName,
           Remark: contact.Remark,
           PusherAccount: weChatInfo['Account'],
@@ -280,6 +281,7 @@ async function contactFunction() {
           row.ContactType = 4; // 公众号
         }
         row.Alias = row.Alias || row.UserName;
+        row.UserType = row.UserName.includes('@openim') ? 20 : 10; // 10:微信客户 20:企微客户
 
         row.pusherAccount = weChatInfo['Account'];
         row.pusherNickName = weChatInfo['NickName'];
@@ -319,7 +321,7 @@ async function msgFunction() {
   writeLog(`[微信消息条数]：${JSON.stringify(count)},共${countPage}页`);
 
   const queryContactDatabase = async (UserNames) => {
-    return await queryDatabase('SELECT UserName,NickName,Remark FROM Contact WHERE UserName in (' + UserNames + ')');
+    return await queryDatabase('SELECT UserName,Alias,NickName,Remark FROM Contact WHERE UserName in (' + UserNames + ')');
   };
   const sendRequests = async () => {
     for (let i = 0; i < count; i += BATCH_SIZE_MSG) {
@@ -369,7 +371,7 @@ async function msgFunction() {
           if (row.StrTalker === 'weixin') {
             row.StrTalkerNickName = '微信团队';
           } else if (row.StrTalker === 'newsapp') {
-            row.StrTalkerNickName = '微信新闻';
+            row.StrTalkerNickName = '腾讯新闻';
           }
         }
         if (row.StrContent.includes('<mmreader>')) { // 公众号消息
@@ -391,12 +393,15 @@ async function msgFunction() {
       rows.forEach(row => {
         const contact = contactRows.find(contact => contact.UserName === row.Talker);
         if (contact) {
+          row.Talker = contact.Alias || contact.UserName;
           row.TalkerNickName = contact.Remark ? contact.Remark : contact.NickName;
         }
         const StrTalker = StrTalkerRows.find(StrTalker => StrTalker.UserName === row.StrTalker);
         if (StrTalker) {
+          row.StrTalker = StrTalker.Alias || StrTalker.UserName;
           row.StrTalkerNickName = StrTalker.Remark ? StrTalker.Remark : StrTalker.NickName;
         }
+        row.UserType = row.Talker.includes('@openim') ? 20 : 10; // 10:微信客户 20:企微客户
       })
       const pageNum = Math.ceil(i / BATCH_SIZE_MSG) + 1;
       await pushDataToServer(`${config.url + config.pushMsgUrl}`, rows, pageNum);
