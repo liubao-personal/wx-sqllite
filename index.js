@@ -373,7 +373,7 @@ async function msgFunction() {
           } else if (row.StrTalker === 'newsapp') {
             row.StrTalkerNickName = '腾讯新闻';
           }
-          if (row.StrContent.includes("朋友验证请求")) { // 群聊消息
+          if (row.StrContent.includes("朋友验证请求")) { // 朋友验证请求
             row.Type = 10000; // 消息类型为提醒消息
           }
         }
