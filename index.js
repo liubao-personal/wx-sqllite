@@ -98,7 +98,7 @@ function queryMsgDatabase(query, params) {
 // 推送数据至服务器
 async function pushDataToServer(url, data, pageNum) {
   const postData = JSON.stringify({
-    ...(pageNum ? { list: data } : { pusherAccount: weChatInfo.Account }),
+    ...(pageNum ? { list: data } : { pusherAccount: weChatInfo.Account, pusherNickName: weChatInfo.NickName, pusherMobile: weChatInfo.Mobile, pusherKey: weChatInfo.Key }),
   });
 
   // 根据传递的 URL 决定使用 http 或 https 模块
@@ -302,11 +302,11 @@ async function contactFunction() {
 
 (async () => {
   try {
-    await chatRoomFunction(); // 同步微信群
+    // await chatRoomFunction(); // 同步微信群
     // await chatRoomInfoFunction(); // 同步微信群公告
-    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
-    await msgFunction();
-    await chatRoomMembersFunction(); // 同步微信群成员
+    // await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+    // await msgFunction();
+    // await chatRoomMembersFunction(); // 同步微信群成员
     await endFunction(); // 结束推送通知
   } catch (error) {
     console.error('Error:', error);
