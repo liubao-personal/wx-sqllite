@@ -302,11 +302,11 @@ async function contactFunction() {
 
 (async () => {
   try {
-    // await chatRoomFunction(); // 同步微信群
-    // await chatRoomInfoFunction(); // 同步微信群公告
-    // await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
-    // await msgFunction();
-    // await chatRoomMembersFunction(); // 同步微信群成员
+    await chatRoomFunction(); // 同步微信群
+    await chatRoomInfoFunction(); // 同步微信群公告
+    await contactFunction(); // 头像微信联系人（关联联系人头像后一起传输）
+    await msgFunction();
+    await chatRoomMembersFunction(); // 同步微信群成员
     await endFunction(); // 结束推送通知
   } catch (error) {
     console.error('Error:', error);
